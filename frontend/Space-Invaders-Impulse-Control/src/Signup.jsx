@@ -6,7 +6,7 @@ export default function Signup() {
   const [password, setPassword] = useState("");
 
   const submit = async () => {
-    await fetch("http://localhost:5000/auth/signup", {
+    await fetch("http://localhost:8000/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, username, password })
