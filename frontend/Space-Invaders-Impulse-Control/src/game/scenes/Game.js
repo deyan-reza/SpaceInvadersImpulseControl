@@ -29,6 +29,8 @@ export class Game extends Phaser.Scene {
         this.windowDuration = calibration?.windowSize || 400;
         this.enemySpeedFactor = calibration?.enemySpeed || 5;
         this.penaltyDuration = calibration?.penaltyTime || 500;
+        this.baseEnemyMoveInterval = 1000;
+        this.enemyMoveInterval = this.baseEnemyMoveInterval;
 
         // background
         this.add.image(512, 384, 'background');
@@ -40,9 +42,19 @@ export class Game extends Phaser.Scene {
         // player
         this.player = this.physics.add.sprite(512, 550, 'player');
         this.player.setCollideWorldBounds(true);
+        this.playerLocked = false;
 
         this.windowInactiveColor = 'red';
         this.windowActiveColor = 'green';
+
+        this.enemyGridConfig = {
+            rows: 3,
+            cols: 8,
+            startX: 150,
+            startY: 100,
+            spacingX: 80,
+            spacingY: 60
+        };
 
         // enemy grid
         this.enemies = this.physics.add.group({ collideWorldBounds: false });
@@ -72,7 +84,6 @@ export class Game extends Phaser.Scene {
         this.enemyDirection = 1;
         this.enemyStepSize = 20;
         this.enemyDropSize = 25;
-        this.enemyMoveInterval = 1000;
         this.lastEnemyMove = 0;
 
         this.cleanStreak = 0;
@@ -81,9 +92,27 @@ export class Game extends Phaser.Scene {
         this.lifeIcons = [];
         this.updateLivesDisplay();
 
+        // Score / reward system
+        this.score = 0;
+        this.scoreText = this.add.text(20, 90, 'Score: 0 - Neutral', {
+            fontFamily: 'Courier',
+            fontSize: '24px',
+            color: '#ffffff'
+        });
+        this.scoreText.setScrollFactor(0);
+        this.activeScoreState = null;
+        this.doubleShotActive = false;
+        this.extraRowEnemies = [];
+        this.shield = null;
+        this.shieldCollider = null;
+        this.shieldHitsRemaining = 0;
+        this.playerLockTimer = null;
+
         // timing window system
         this.windowOpen = false;
         this.startWindowLoop();
+
+        this.modifyScore(0);
 
         EventBus.emit('current-scene-ready', this);
     }
@@ -307,6 +336,7 @@ export class Game extends Phaser.Scene {
             else {
                 console.log("IMPULSIVE / TOO EARLY");
                 this.cleanStreak = 0;
+                this.modifyScore(-1);
                 this.applyPenalty();
             }
         }
@@ -315,37 +345,49 @@ export class Game extends Phaser.Scene {
 
 
     shootBullet() {
-        const bullet = this.physics.add.sprite(this.player.x, this.player.y - 20, 'laser');
+        const offsets = this.doubleShotActive ? [-15, 15] : [0];
+        offsets.forEach(offset => this.spawnPlayerBullet(offset));
+    }
+
+    spawnPlayerBullet(offsetX = 0) {
+        const bullet = this.physics.add.sprite(this.player.x + offsetX, this.player.y - 20, 'laser');
         bullet.setVelocityY(-500);
         bullet.setScale(0.5);
 
-        // bullet vs enemies collision
-        this.physics.add.overlap(bullet, this.enemies, (bullet, enemy) => {
-            this.handleEnemyHit(bullet, enemy);
+        this.physics.add.overlap(bullet, this.enemies, (playerBullet, enemy) => {
+            this.handleEnemyHit(playerBullet, enemy);
         });
     }
 
 
-applyPenalty() {
-    // If the player sprite or its physics body is gone, do nothing
-    if (!this.player || !this.player.body) {
-        return;
-    }
-
-    this.playerLocked = true;
-
-    // Stop the player completely during the penalty
-    this.player.setVelocity(0,0);
-
-    this.time.delayedCall(this.penaltyDuration || 500, () => {
-        // Only unlock if the player still exists
-        if (this.player && this.player.body) {
-            this.playerLocked = false;
-            // Optional: make sure velocity is still zero
-            this.player.setVelocity(0,0);
+    applyPenalty(durationOverride) {
+        // If the player sprite or its physics body is gone, do nothing
+        if (!this.player || !this.player.body) {
+            return;
         }
-    });
-}
+
+        this.playerLocked = true;
+
+        // Stop the player completely during the penalty
+        this.player.setVelocity(0,0);
+
+        if (this.playerLockTimer) {
+            this.playerLockTimer.remove(false);
+            this.playerLockTimer = null;
+        }
+
+        const delay = durationOverride ?? (this.penaltyDuration || 500);
+
+        this.playerLockTimer = this.time.delayedCall(delay, () => {
+            // Only unlock if the player still exists
+            if (this.player && this.player.body) {
+                this.playerLocked = false;
+                // Optional: make sure velocity is still zero
+                this.player.setVelocity(0,0);
+            }
+            this.playerLockTimer = null;
+        });
+    }
 
     checkStreakReward() {
         if (this.cleanStreak === 5) {
@@ -369,28 +411,31 @@ applyPenalty() {
     }
 
     createEnemyGrid() {
-        const rows = 3;
-        const cols = 8;
-        const startX = 150;
-        const startY = 100;
-        const spacingX = 80;
-        const spacingY = 60;
+        const { rows, cols, startX, startY, spacingX, spacingY } = this.enemyGridConfig;
 
         for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < cols; col++) {
-                let enemy = this.enemies.create(
-                    startX + col * spacingX,
-                    startY + row * spacingY,
-                    this.windowInactiveColor
-                );
-                enemy.setScale(0.6);
-                enemy.setOrigin(0.5);
-                enemy.alive = true;
-            }
+            this.spawnEnemyRow(startY + row * spacingY, cols, startX, spacingX);
         }
 
         // enemy movement direction
         this.enemyDirection = 1;
+    }
+
+    spawnEnemyRow(y, cols, startX, spacingX) {
+        const created = [];
+        const textureKey = this.windowOpen ? this.windowActiveColor : this.windowInactiveColor;
+        for (let col = 0; col < cols; col++) {
+            let enemy = this.enemies.create(
+                startX + col * spacingX,
+                y,
+                textureKey
+            );
+            enemy.setScale(0.6);
+            enemy.setOrigin(0.5);
+            enemy.alive = true;
+            created.push(enemy);
+        }
+        return created;
     }
 
     updateEnemyColors(isWindowOpen) {
@@ -422,6 +467,153 @@ applyPenalty() {
         }
     }
 
+    modifyScore(delta) {
+        if (typeof this.score !== 'number') return;
+
+        const newScore = Phaser.Math.Clamp(this.score + delta, -3, 3);
+        this.score = newScore;
+
+        if (this.scoreText) {
+            this.scoreText.setText(`Score: ${this.score} - ${this.getScoreDescription(this.score)}`);
+        }
+
+        if (this.score !== this.activeScoreState) {
+            this.clearScoreEffects();
+            this.applyScoreEffect(this.score);
+        }
+    }
+
+    clearScoreEffects() {
+        this.enemyMoveInterval = this.baseEnemyMoveInterval;
+        this.doubleShotActive = false;
+        this.removeShield();
+        this.removeExtraRow();
+    }
+
+    applyScoreEffect(score) {
+        switch (score) {
+            case -3:
+                this.addExtraEnemyRow();
+                break;
+            case -2:
+                this.applyPenalty(2000);
+                break;
+            case -1:
+                this.enemyMoveInterval = Math.max(200, this.baseEnemyMoveInterval * 0.6);
+                break;
+            case 1:
+                this.enemyMoveInterval = this.baseEnemyMoveInterval * 1.4;
+                break;
+            case 2:
+                this.doubleShotActive = true;
+                break;
+            case 3:
+                this.spawnShield();
+                break;
+            default:
+                break;
+        }
+
+        this.activeScoreState = score;
+    }
+
+    getScoreDescription(score) {
+        switch (score) {
+            case -3:
+                return 'Extra Enemy Row';
+            case -2:
+                return 'Frozen';
+            case -1:
+                return 'Enemies Faster';
+            case 1:
+                return 'Enemies Slower';
+            case 2:
+                return 'Double Shot';
+            case 3:
+                return 'Shield Active';
+            default:
+                return 'Neutral';
+        }
+    }
+
+    addExtraEnemyRow() {
+        const { cols, startX, spacingX, startY, spacingY, rows } = this.enemyGridConfig;
+        const y = startY + rows * spacingY;
+        this.extraRowEnemies = this.spawnEnemyRow(y, cols, startX, spacingX);
+    }
+
+    removeExtraRow() {
+        if (!this.extraRowEnemies || this.extraRowEnemies.length === 0) {
+            return;
+        }
+
+        this.extraRowEnemies.forEach(enemy => {
+            if (enemy && enemy.active) {
+                enemy.destroy();
+            } else if (enemy && enemy.body) {
+                enemy.destroy();
+            }
+        });
+
+        this.extraRowEnemies = [];
+    }
+
+    spawnShield() {
+        if (this.shield) {
+            this.shieldHitsRemaining = 5;
+            return;
+        }
+
+        const shieldWidth = 140;
+        const shieldHeight = 30;
+        this.shieldHitsRemaining = 5;
+        this.shield = this.add.rectangle(512, 470, shieldWidth, shieldHeight, 0x00ffff, 1);
+        this.shield.setDepth(1);
+        this.physics.add.existing(this.shield, true);
+        if (this.shield.body && this.shield.body.setSize) {
+            this.shield.body.setSize(shieldWidth, shieldHeight);
+        }
+        this.shieldCollider = this.physics.add.overlap(
+            this.enemyBullets,
+            this.shield,
+            (bullet) => this.handleShieldHit(bullet),
+            null,
+            this
+        );
+    }
+
+    handleShieldHit(bullet) {
+        if (bullet && bullet.active) {
+            bullet.destroy();
+        }
+
+        if (!this.shield) return;
+
+        this.shieldHitsRemaining -= 1;
+        this.shield.fillAlpha = Phaser.Math.Clamp(0.3 + this.shieldHitsRemaining * 0.12, 0.3, 1);
+
+        if (this.shieldHitsRemaining <= 0) {
+            this.removeShield();
+        }
+    }
+
+    removeShield() {
+        if (this.shieldCollider) {
+            this.shieldCollider.destroy();
+            this.shieldCollider = null;
+        }
+
+        if (this.shield) {
+            if (this.shield.body) {
+                this.shield.body.enable = false;
+            }
+            this.shield.destroy();
+            this.shield = null;
+        }
+
+        this.shieldHitsRemaining = 0;
+    }
+
     handleEnemyHit(bullet, enemy) {
         bullet.destroy();
 
@@ -432,10 +624,11 @@ applyPenalty() {
 
         // TODO: Add reward or adaptive difficulty here
         console.log("Enemy destroyed!");
+        this.modifyScore(1);
 
         // optional: check if all enemies are dead
         if (this.enemies.countActive() === 0) {
-            console.log("Wave cleared!");
+            console.log("All Invaders Cleared!");
             // you can create a new wave here
         }
     }
