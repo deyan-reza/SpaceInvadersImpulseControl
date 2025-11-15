@@ -1,39 +1,45 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
-import Phaser from 'phaser';
 import { PhaserGame } from './PhaserGame';
+import Login from './Login';
+import Signup from './Signup';
 
-function App ()
-{
-
-    //  References to the PhaserGame component (game and scene are exposed)
+function App() {
     const phaserRef = useRef();
+    const [currentPage, setCurrentPage] = useState('home'); // home | login | signup
 
-    // const addSprite = () => {
+    const goHome = () => setCurrentPage('home');
 
-    //     const scene = phaserRef.current.scene;
+    const renderHome = () => (
+        <div className="home-page">
+            <PhaserGame ref={phaserRef} />
+            <div className="home-actions">
+                <button className="cta-button" onClick={() => setCurrentPage('login')}>
+                    Login
+                </button>
+                <button className="cta-button secondary" onClick={() => setCurrentPage('signup')}>
+                    Sign Up
+                </button>
+            </div>
+        </div>
+    );
 
-    //     if (scene)
-    //     {
-    //         // Add a new sprite to the current scene at a random position
-    //         const x = Phaser.Math.Between(64, scene.scale.width - 64);
-    //         const y = Phaser.Math.Between(64, scene.scale.height - 64);
-
-    //         //  `add.sprite` is a Phaser GameObjectFactory method and it returns a Sprite Game Object instance
-    //         scene.add.sprite(x, y, 'star');
-    //     }
-    // }
+    const renderAuthPage = (mode) => (
+        <div className="auth-page">
+            <button className="back-button" onClick={goHome}>
+                &lt; Back to Home
+            </button>
+            <div className="auth-card">
+                {mode === 'login' ? <Login /> : <Signup />}
+            </div>
+        </div>
+    );
 
     return (
         <div id="app">
-            <PhaserGame ref={phaserRef} />
-            <div>
-                <div>
-                    {/* <button className="button" onClick={addSprite}>Add New Sprite</button> */}
-                </div>
-            </div>
+            {currentPage === 'home' ? renderHome() : renderAuthPage(currentPage)}
         </div>
-    )
+    );
 }
 
-export default App
+export default App;
