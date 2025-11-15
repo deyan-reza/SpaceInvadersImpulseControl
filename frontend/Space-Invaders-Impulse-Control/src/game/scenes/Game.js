@@ -22,8 +22,14 @@ export class Game extends Phaser.Scene
         this.load.image('green', 'green.png');
     }
 
-    create() {
+    create(calibration) {
         console.log("Game scene CREATE() fired.");
+        console.log("Received calibration:", calibration);
+
+        this.windowDuration = calibration?.windowSize || 400;
+        this.enemySpeedFactor = calibration?.enemySpeed || 1;
+        this.penaltyDuration = calibration?.penaltyTime || 500;
+
 
         // background
         this.add.image(512, 384, 'background');
@@ -35,6 +41,14 @@ export class Game extends Phaser.Scene
         // player
         this.player = this.physics.add.sprite(512, 550, 'player');
         this.player.setCollideWorldBounds(true);
+
+        // enemy grid
+        this.enemies = this.physics.add.group({
+        collideWorldBounds: false
+        });
+
+        this.createEnemyGrid();
+
 
 
         // window system
@@ -58,14 +72,40 @@ export class Game extends Phaser.Scene
         this.flash = this.add.rectangle(512, 50, 800, 20, 0x00ff00);
         this.flash.alpha = 0.6;
 
-        this.time.delayedCall(500, () => {
+        this.time.delayedCall(this.windowDuration, () => {
             this.windowOpen = false;
             this.flash.destroy();
-        });
-    }
+    });
+}
+
 
     update() {
         if (this.playerLocked) return;
+
+        // enemy movement
+if (this.enemies && this.enemies.getChildren) {
+    const enemies = this.enemies.getChildren();
+
+    let moveDown = false;
+
+    for (let enemy of enemies) {
+        enemy.x += this.enemyDirection * 1.0; // horizontal movement speed
+
+        // hit screen edge? reverse direction
+        if (enemy.x > 950 || enemy.x < 50) {
+            moveDown = true;
+        }
+    }
+
+    // move entire grid down if needed
+    if (moveDown) {
+        this.enemyDirection *= -1;
+        for (let enemy of enemies) {
+            enemy.y += 20;
+        }
+    }
+}
+
 
         if (this.cursors.left.isDown) {
             this.player.body.setVelocityX(-300);
@@ -87,10 +127,16 @@ export class Game extends Phaser.Scene
     }
 
     shootBullet() {
-        const bullet = this.add.rectangle(this.player.x, this.player.y - 20, 5, 10, 0xffffff);
-        this.physics.add.existing(bullet);
-        bullet.body.setVelocityY(-400);
-    }
+    const bullet = this.physics.add.sprite(this.player.x, this.player.y - 20, 'laser');
+    bullet.setVelocityY(-500);
+    bullet.setScale(0.5);
+
+    // bullet vs enemies collision
+    this.physics.add.overlap(bullet, this.enemies, (bullet, enemy) => {
+        this.handleEnemyHit(bullet, enemy);
+    });
+}
+
 
     applyPenalty() {
         this.playerLocked = true;
@@ -100,4 +146,51 @@ export class Game extends Phaser.Scene
             this.playerLocked = false;
         });
     }
+
+    createEnemyGrid() {
+        const rows = 3;
+        const cols = 8;
+        const startX = 150;
+        const startY = 100;
+        const spacingX = 80;
+        const spacingY = 60;
+
+        const colors = ['red', 'yellow', 'green']; // one color per row
+
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                let enemy = this.enemies.create(
+                    startX + col * spacingX,
+                    startY + row * spacingY,
+                    colors[row]
+                );
+                enemy.setScale(0.6);
+                enemy.setOrigin(0.5);
+                enemy.alive = true;
+            }
+        }
+
+        // enemy movement direction
+        this.enemyDirection = 1;
+    }
+
+    handleEnemyHit(bullet, enemy) {
+        bullet.destroy();
+
+        if (!enemy.alive) return;
+
+        enemy.alive = false;
+        enemy.disableBody(true, true);
+
+        // TODO: Add reward or adaptive difficulty here
+        console.log("Enemy destroyed!");
+
+        // optional: check if all enemies are dead
+        if (this.enemies.countActive() === 0) {
+            console.log("Wave cleared!");
+            // you can create a new wave here
+        }
+    }
+
+
 }
