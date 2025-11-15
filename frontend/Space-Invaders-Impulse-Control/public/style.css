@@ -36,7 +36,7 @@ body {
     }
 
     &:active {
-        background-color: #0ec3c9;
+        background-color: #000000;
     }
 
     /* Disabled styles */
