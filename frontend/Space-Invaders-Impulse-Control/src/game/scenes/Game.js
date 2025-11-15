@@ -26,7 +26,7 @@ export class Game extends Phaser.Scene {
         console.log("Received calibration:", calibration);
 
         this.windowDuration = calibration?.windowSize || 400;
-        this.enemySpeedFactor = calibration?.enemySpeed || 1;
+        this.enemySpeedFactor = calibration?.enemySpeed || 5;
         this.penaltyDuration = calibration?.penaltyTime || 500;
 
         // background
@@ -91,35 +91,35 @@ export class Game extends Phaser.Scene {
     }
 
     gameOver() {
-    console.log("GAME OVER!");
+        console.log("GAME OVER!");
 
-    // Stop movement
-    this.playerLocked = true;
+        // Stop movement
+        this.playerLocked = true;
 
-    // Remove player sprite
-    if (this.player) {
-        this.player.destroy();
-        this.player = null;
+        // Remove player sprite
+        if (this.player) {
+            this.player.destroy();
+            this.player = null;
+        }
+
+        // Stop all enemy bullets
+        this.enemyBullets.clear(true, true);
+
+        // Stop enemy movement & shooting
+        this.enemyShootTimer.remove(false);
+
+        // Display "Game Over"
+        this.add.text(512, 350, 'GAME OVER', {
+            fontFamily: 'Courier',
+            fontSize: '70px',
+            color: '#ff0000'
+        }).setOrigin(0.5);
+
+        // Optionally restart
+        this.time.delayedCall(3000, () => {
+            this.scene.start('Calibration'); // or StartScreen
+        });
     }
-
-    // Stop all enemy bullets
-    this.enemyBullets.clear(true, true);
-
-    // Stop enemy movement & shooting
-    this.enemyShootTimer.remove(false);
-
-    // Display "Game Over"
-    this.add.text(512, 350, 'GAME OVER', {
-        fontFamily: 'Courier',
-        fontSize: '70px',
-        color: '#ff0000'
-    }).setOrigin(0.5);
-
-    // Optionally restart
-    this.time.delayedCall(3000, () => {
-        this.scene.start('Calibration'); // or StartScreen
-    });
-}
 
 
     enemyShoot() {
@@ -141,26 +141,57 @@ export class Game extends Phaser.Scene {
 
 
     handlePlayerHit(bullet, player) {
-    bullet.destroy();
+        bullet.destroy();
 
-    console.log("Player HIT!");
+        console.log("Player HIT!");
 
-    this.lives--;
-    this.livesText.setText('Lives: ' + this.lives);
+        this.lives--;
+        this.livesText.setText('Lives: ' + this.lives);
 
-    // Flash red
-    const redFlash = this.add.rectangle(512, 384, 1024, 768, 0xff0000, 0.2);
-    this.time.delayedCall(150, () => redFlash.destroy());
+        // Flash red
+        const redFlash = this.add.rectangle(512, 384, 1024, 768, 0xff0000, 0.2);
+        this.time.delayedCall(150, () => redFlash.destroy());
 
-    // Check for death
-    if (this.lives <= 0) {
-        this.gameOver();
-    } else {
-        this.applyPenalty();
+        // Check for death
+        if (this.lives == 0) {
+            this.gameOver();
+        } else {
+            this.applyPenalty();
+            this.respawnPlayer();
+        }
     }
-}
 
 
+    respawnPlayer() {
+        // If old sprite still exists, just reset it
+        if (this.player && this.player.body) {
+            this.player.setVelocity(0, 0);
+            this.player.x = 512;
+            this.player.y = 550;
+        } else {
+            // Re-create the player sprite if it was destroyed
+            this.player = this.physics.add.sprite(512, 550, 'player');
+            this.player.setCollideWorldBounds(true);
+
+            // Reconnect collision with enemy bullets
+            this.physics.add.overlap(
+                this.enemyBullets,
+                this.player,
+                (bullet, player) => this.handlePlayerHit(bullet, player)
+            );
+        }
+
+        // Unlock movement
+        this.playerLocked = false;
+
+        // Optional: brief invincibility / visual feedback
+        this.player.setAlpha(0.4);
+        this.time.delayedCall(1000, () => {
+            if (this.player && this.player.body) {
+                this.player.setAlpha(1);
+            }
+        });
+    }
 
 
     startWindowLoop() {
@@ -185,11 +216,17 @@ export class Game extends Phaser.Scene {
 
     update() {
 
-        if (!this.player) return;    // <- prevents movement when player is removed
-
+        // If player sprite or its physics body is gone, skip everything
+        if (!this.player || !this.player.body) {
+            return;
+        }
 
         // ========= PLAYER LOCKED DURING PENALTY ==========
-        if (this.playerLocked) return;
+        if (this.playerLocked) {
+            // (optional but safe) keep player stopped while locked
+            this.player.setVelocity(0, 0);
+            return;
+        }
 
 
         // ========= RETRO ENEMY BLOCK MOVEMENT ==========
@@ -228,7 +265,7 @@ export class Game extends Phaser.Scene {
                 // LOSS CONDITION
                 if (enemies.some(e => e.active && e.y > 520)) {
                     console.log("Enemy reached the player zone!");
-                    // TODO: this.gameOver();
+                    this.gameOver();
                 }
             }
         }
@@ -286,20 +323,26 @@ export class Game extends Phaser.Scene {
     }
 
 
-    applyPenalty() {
-    if (!this.player) return;
-
-    this.playerLocked = true;
-    this.player.setVelocityX(0);
-
-    this.time.delayedCall(this.penaltyDuration || 500, () => {
-        if (this.player) {
-            this.playerLocked = false;
-        }
-    });
+applyPenalty() {
+    // If the player sprite or its physics body is gone, do nothing
+    if (!this.player || !this.player.body) {
+        return;
     }
 
+    this.playerLocked = true;
 
+    // Stop the player completely during the penalty
+    this.player.setVelocity(0,0);
+
+    this.time.delayedCall(this.penaltyDuration || 500, () => {
+        // Only unlock if the player still exists
+        if (this.player && this.player.body) {
+            this.playerLocked = false;
+            // Optional: make sure velocity is still zero
+            this.player.setVelocity(0,0);
+        }
+    });
+}
 
     checkStreakReward() {
         if (this.cleanStreak === 5) {
