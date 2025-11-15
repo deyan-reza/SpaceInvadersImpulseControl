@@ -1,6 +1,7 @@
 import { Game as MainGame } from './scenes/Game.js';
 import { Start } from './scenes/Start.js';
 import { Calibration } from './scenes/Calibration.js';
+import { HowToPlay } from './scenes/HowToPlay.js';
 import { AUTO, Game } from 'phaser';
 
 const config = {
@@ -20,6 +21,7 @@ const config = {
 
     scene: [
         Start,
+        HowToPlay,
         Calibration,
         MainGame,
     ]
