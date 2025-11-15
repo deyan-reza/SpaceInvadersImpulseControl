@@ -1,6 +1,7 @@
 import { Game as MainGame } from './scenes/Game.js';
 import { Start } from './scenes/Start.js';
 import { Calibration } from './scenes/Calibration.js';
+import { HowToPlay } from './scenes/HowToPlay.js';
 import { AUTO, Game } from 'phaser';
 
 const config = {
@@ -8,7 +9,7 @@ const config = {
     width: 1024,
     height: 768,
     parent: 'game-container',
-    backgroundColor: '#028af8',
+    // backgroundColor: '#028af8',
 
     physics: {
         default: 'arcade',
@@ -20,6 +21,7 @@ const config = {
 
     scene: [
         Start,
+        HowToPlay,
         Calibration,
         MainGame,
     ]
