@@ -12,7 +12,7 @@ export class HowToPlay extends Phaser.Scene {
     }
 
     create() {
-        // Background
+        // Background image
         this.add.image(512, 384, 'background');
 
         const instructions = [
@@ -24,21 +24,55 @@ export class HowToPlay extends Phaser.Scene {
             '• Goal: control your impulses, not spam the key.',
         ].join('\n');
 
-        // Centered text block
-        this.add.text(512, 260, instructions, {
+        // --- Main instructions text ---
+        const instructionsText = this.add.text(512, 260, instructions, {
             fontFamily: 'Arial',
             fontSize: '26px',
-            color: '#ffffff',
+            color: '#00ff00',
             align: 'center',
             wordWrap: { width: 700 }
         }).setOrigin(0.5);
 
-        // Hint to go back
-        this.add.text(512, 560, 'Press SPACE or click to go back', {
+        // Black box behind main instructions
+        const instrPadding = 20;
+        const instrBounds = instructionsText.getBounds();
+
+        const instructionsBg = this.add.rectangle(
+            instrBounds.centerX,
+            instrBounds.centerY,
+            instrBounds.width + instrPadding * 2,
+            instrBounds.height + instrPadding * 2,
+            0x000000,
+            0.7 // alpha for transparency
+        );
+        instructionsBg.setOrigin(0.5);
+
+        // Make sure background is behind text
+        instructionsBg.setDepth(0);
+        instructionsText.setDepth(1);
+
+        // --- Hint text at bottom ---
+        const hintText = this.add.text(512, 560, 'Press SPACE or click to go back', {
             fontFamily: 'Arial',
             fontSize: '18px',
-            color: '#ffffff'
+            color: '#00ff00'
         }).setOrigin(0.5);
+
+        const hintPadding = 10;
+        const hintBounds = hintText.getBounds();
+
+        const hintBg = this.add.rectangle(
+            hintBounds.centerX,
+            hintBounds.centerY,
+            hintBounds.width + hintPadding * 2,
+            hintBounds.height + hintPadding * 2,
+            0x000000,
+            0.7
+        );
+        hintBg.setOrigin(0.5);
+
+        hintBg.setDepth(0);
+        hintText.setDepth(1);
 
         // Back to Start on SPACE
         this.input.keyboard.once('keydown-SPACE', () => {
