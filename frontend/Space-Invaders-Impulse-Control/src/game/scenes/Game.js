@@ -19,6 +19,7 @@ export class Game extends Phaser.Scene {
         this.load.image('red', 'red.png');
         this.load.image('yellow', 'yellow.png');
         this.load.image('green', 'green.png');
+        this.load.image('heart', 'heart_png.png');
     }
 
     create(calibration) {
@@ -39,6 +40,9 @@ export class Game extends Phaser.Scene {
         // player
         this.player = this.physics.add.sprite(512, 550, 'player');
         this.player.setCollideWorldBounds(true);
+
+        this.windowInactiveColor = 'red';
+        this.windowActiveColor = 'green';
 
         // enemy grid
         this.enemies = this.physics.add.group({ collideWorldBounds: false });
@@ -74,14 +78,8 @@ export class Game extends Phaser.Scene {
         this.cleanStreak = 0;
         // Player lives
         this.lives = 3;
-
-        // Show lives on screen
-        this.livesText = this.add.text(20, 20, 'Lives: 3', {
-            fontFamily: 'Courier',
-            fontSize: '28px',
-            color: '#ffffff'
-});
-
+        this.lifeIcons = [];
+        this.updateLivesDisplay();
 
         // timing window system
         this.windowOpen = false;
@@ -146,7 +144,7 @@ export class Game extends Phaser.Scene {
         console.log("Player HIT!");
 
         this.lives--;
-        this.livesText.setText('Lives: ' + this.lives);
+        this.updateLivesDisplay();
 
         // Flash red
         const redFlash = this.add.rectangle(512, 384, 1024, 768, 0xff0000, 0.2);
@@ -204,13 +202,18 @@ export class Game extends Phaser.Scene {
 
     openWindow() {
         this.windowOpen = true;
+        this.updateEnemyColors(true);
 
         this.flash = this.add.rectangle(512, 50, 800, 20, 0x00ff00);
         this.flash.alpha = 0.6;
 
         this.time.delayedCall(this.windowDuration, () => {
             this.windowOpen = false;
-            this.flash.destroy();
+            this.updateEnemyColors(false);
+            if (this.flash) {
+                this.flash.destroy();
+                this.flash = null;
+            }
         });
     }
 
@@ -373,14 +376,12 @@ applyPenalty() {
         const spacingX = 80;
         const spacingY = 60;
 
-        const colors = ['red', 'yellow', 'green']; // one color per row
-
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 let enemy = this.enemies.create(
                     startX + col * spacingX,
                     startY + row * spacingY,
-                    colors[row]
+                    this.windowInactiveColor
                 );
                 enemy.setScale(0.6);
                 enemy.setOrigin(0.5);
@@ -390,6 +391,35 @@ applyPenalty() {
 
         // enemy movement direction
         this.enemyDirection = 1;
+    }
+
+    updateEnemyColors(isWindowOpen) {
+        const textureKey = isWindowOpen ? this.windowActiveColor : this.windowInactiveColor;
+        this.enemies.getChildren().forEach(enemy => {
+            if (enemy.active) {
+                enemy.setTexture(textureKey);
+            }
+        });
+    }
+
+    updateLivesDisplay() {
+        if (this.lifeIcons && this.lifeIcons.length) {
+            this.lifeIcons.forEach(icon => icon.destroy());
+        }
+        this.lifeIcons = [];
+
+        const startX = 20;
+        const startY = 20;
+        const spacing = 60;
+        const scale = 0.12;
+
+        for (let i = 0; i < this.lives; i++) {
+            const heart = this.add.image(startX + i * spacing, startY, 'heart');
+            heart.setScale(scale);
+            heart.setOrigin(0, 0);
+            heart.setScrollFactor(0);
+            this.lifeIcons.push(heart);
+        }
     }
 
     handleEnemyHit(bullet, enemy) {
