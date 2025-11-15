@@ -97,6 +97,8 @@ this.reactionText = this.add.text(512, 500, '', {
 checkIfCalibrationCanEnd() {
     const elapsed = this.time.now - this.startTime;
 
+    if (this.flash) return;
+
     // We need:
     // 1. At least 3 flashes
     // 2. At least minimum total time elapsed
@@ -112,21 +114,16 @@ checkIfCalibrationCanEnd() {
     handleSpacePress() {
     const now = this.time.now;
 
-    // VALID PRESS (during flash)
-    if (this.flash) {
+    if (this.flash && this.flashTime) {
         const rt = now - this.flashTime;
         this.reactionTimes.push(rt);
-
-        // Show reaction time immediately
         this.displayReaction(rt);
-
-    } else {
-        // EARLY PRESS
-        this.earlyPresses++;
-
-        // Show premature indicator
-        this.displayReaction("Too early!");
+        return;
     }
+
+    // EARLY PRESS (impulse)
+    this.earlyPresses++;
+    this.displayReaction("Too early!");
 }
 
 displayReaction(value) {

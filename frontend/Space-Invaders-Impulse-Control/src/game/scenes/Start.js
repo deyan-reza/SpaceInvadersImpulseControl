@@ -16,7 +16,7 @@ export class Start extends Phaser.Scene {
         this.add.image(512, 384, 'background');
 
         // title
-        this.add.text(512, 150, 'SPACE INVADERS\nIMPULSE CONTROL', {
+        this.add.text(512, 150, 'BRAIN INVADERS', {
             fontFamily: 'Courier',
             fontSize: '48px',
             color: '#ffffff',
@@ -54,13 +54,8 @@ export class Start extends Phaser.Scene {
         return btn;
     }
 
-    showHowToPlay() {
-        alert(`
-Shoot ONLY during green window flashes.
-Good timing -> rewards.
-Bad timing -> penalties.
+showHowToPlay() {
+    this.scene.start("HowToPlay")
 
-Beat the aliens with control, not speed!
-        `);
-    }
+}
 }
