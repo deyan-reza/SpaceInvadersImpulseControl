@@ -12,9 +12,14 @@ export class Game extends Phaser.Scene
 
     preload() {
         this.load.setPath('assets');
-        this.load.image('star', 'star.png');
-        this.load.image('background', 'bg.png');
-        this.load.image('logo', 'logo.png');
+        //this.load.image('star', 'star.png');
+        this.load.image('background', 'bg.jpg');
+        //this.load.image('logo', 'logo.png');
+        this.load.image('laser', 'laser.png');
+        this.load.image('player', 'player.png');
+        this.load.image('red', 'red.png');
+        this.load.image('yellow', 'yellow.png');
+        this.load.image('green', 'green.png');
     }
 
     create() {
@@ -28,9 +33,9 @@ export class Game extends Phaser.Scene
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
         // player
-        this.player = this.add.rectangle(512, 550, 40, 20, 0xffffff);
-        this.physics.add.existing(this.player);
-        this.player.body.setCollideWorldBounds(true);
+        this.player = this.physics.add.sprite(512, 550, 'player');
+        this.player.setCollideWorldBounds(true);
+
 
         // window system
         this.windowOpen = false;
