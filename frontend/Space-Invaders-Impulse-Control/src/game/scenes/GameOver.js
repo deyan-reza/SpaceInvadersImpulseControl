@@ -19,7 +19,7 @@ export class GameOver extends Phaser.Scene {
 
     create() {
         this.add.text(512, 250, "GAME OVER", {
-            fontFamily: 'Courier',
+            fontFamily: 'Retro',
             fontSize: '70px',
             color: '#ff0000'
         }).setOrigin(0.5);
@@ -27,7 +27,7 @@ export class GameOver extends Phaser.Scene {
         this.add.text(512, 330,
             `Final Score: ${this.finalScore}\nAvg RT: ${Math.round(this.averageReactionTime)}ms`,
             {
-                fontFamily: 'Courier',
+                fontFamily: 'Retro',
                 fontSize: '28px',
                 color: '#ffffff',
                 align: 'center'
@@ -36,7 +36,7 @@ export class GameOver extends Phaser.Scene {
 
         // PLAY AGAIN button
         const playAgainBtn = this.add.text(512, 420, "Play Again", {
-            fontFamily: 'Courier',
+            fontFamily: 'Retro',
             fontSize: '36px',
             color: '#00ff00'
         }).setOrigin(0.5).setInteractive();
@@ -47,7 +47,7 @@ export class GameOver extends Phaser.Scene {
 
         // MAIN MENU button
         const menuBtn = this.add.text(512, 500, "Return to Main Menu", {
-            fontFamily: 'Courier',
+            fontFamily: 'Retro',
             fontSize: '30px',
             color: '#00aaff'
         }).setOrigin(0.5).setInteractive();

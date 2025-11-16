@@ -15,14 +15,14 @@ export class Calibration extends Phaser.Scene {
     this.add.image(512, 384, 'background');
 
     this.add.text(512, 150, 'Calibration Test', {
-        fontFamily: 'Courier',
+        fontFamily: 'Retro',
         fontSize: '40px',
         color: '#ffffff',
         align: 'center'
     }).setOrigin(0.5);
 
     this.add.text(512, 240, 'Press SPACE ONLY when the screen flashes.', {
-        fontFamily: 'Courier',
+        fontFamily: 'Retro',
         fontSize: '24px',
         color: '#ffff00',
         align: 'center'
@@ -30,7 +30,7 @@ export class Calibration extends Phaser.Scene {
 
     // UI text that will show each reaction time
 this.reactionText = this.add.text(512, 500, '', {
-    fontFamily: 'Courier',
+    fontFamily: 'Retro',
     fontSize: '32px',
     color: '#00ff00',
     align: 'center'
@@ -191,6 +191,9 @@ displayReaction(value) {
         console.log("Calibration Result:", calibrationData);
 
         // Send into Game scene
-        this.scene.start('Game', calibrationData);
+        localStorage.setItem("isCalibrated", "true");
+        localStorage.setItem("calibrationData", JSON.stringify(calibrationData));
+        this.scene.start("Game", calibrationData);
+
     }
 }

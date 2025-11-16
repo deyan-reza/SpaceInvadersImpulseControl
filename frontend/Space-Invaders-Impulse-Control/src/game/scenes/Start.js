@@ -7,7 +7,6 @@ export class Start extends Phaser.Scene {
 
     preload() {
         this.load.setPath('assets');
-
         this.load.image('background', 'bg.jpg');
         this.load.audio('bgMusic', 'bg.mp3');
 
@@ -34,8 +33,16 @@ export class Start extends Phaser.Scene {
         
         // --- BUTTONS ---
         this.makeButton(512, 350, 'START GAME', () => {
-            this.bgMusic.stop();
-            this.scene.start('Calibration');
+            const isCalibrated = localStorage.getItem("isCalibrated");
+
+            if (!isCalibrated) {
+                    this.bgMusic.stop();
+                this.scene.start("Calibration");
+            } else {
+                    this.bgMusic.stop();
+                const savedCalibration = JSON.parse(localStorage.getItem("calibrationData"));
+                this.scene.start("Game", savedCalibration);
+            }
         });
 
         this.makeButton(512, 430, 'HOW TO PLAY', () => {
@@ -43,13 +50,13 @@ export class Start extends Phaser.Scene {
         });
 
         this.makeButton(512, 510, 'PAST SESSIONS', () => {
-            console.log('Will load past sessions screen');
+            this.showPastSessions();
         });
     }
 
     makeButton(x, y, label, callback) {
         const btn = this.add.text(x, y, label, {
-            fontFamily: 'Courier',
+            fontFamily: 'Retro',
             fontSize: '32px',
             color: '#00ff00',
             backgroundColor: '#000000',
@@ -67,6 +74,10 @@ export class Start extends Phaser.Scene {
 showHowToPlay() {
     this.bgMusic.stop();
     this.scene.start("HowToPlay")
+}
 
+showPastSessions() {
+    this.bgMusic.stop();
+    this.scene.start("PastSessions")
 }
 }

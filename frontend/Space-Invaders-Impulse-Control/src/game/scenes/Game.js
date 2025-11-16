@@ -110,7 +110,7 @@ export class Game extends Phaser.Scene {
         // Score / reward system
         this.score = 0;
         this.scoreText = this.add.text(20, 90, 'Score: 0 - Neutral', {
-            fontFamily: 'Courier',
+            fontFamily: 'Retro',
             fontSize: '24px',
             color: '#ffffff'
         });
@@ -122,19 +122,19 @@ export class Game extends Phaser.Scene {
         this.misfireCount = 0;
         this.finalScore = 0;
         this.killText = this.add.text(20, 130, 'Kills: 0', {
-            fontFamily: 'Courier',
+            fontFamily: 'Retro',
             fontSize: '20px',
             color: '#ffffff'
         });
         this.killText.setScrollFactor(0);
         this.misfireText = this.add.text(20, 160, 'Misfires: 0', {
-            fontFamily: 'Courier',
+            fontFamily: 'Retro',
             fontSize: '20px',
             color: '#ffffff'
         });
         this.misfireText.setScrollFactor(0);
         // this.finalScoreText = this.add.text(20, 190, 'Final Score: 0', {
-        //     fontFamily: 'Courier',
+        //     fontFamily: 'Retro',
         //     fontSize: '20px',
         //     color: '#ffffff'
         // });
@@ -194,7 +194,7 @@ export class Game extends Phaser.Scene {
 
         // Display "Game Over"
         this.add.text(512, 350, 'GAME OVER', {
-            fontFamily: 'Courier',
+            fontFamily: 'Retro',
             fontSize: '70px',
             color: '#ff0000'
         }).setOrigin(0.5);

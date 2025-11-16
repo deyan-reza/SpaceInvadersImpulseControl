@@ -71,4 +71,29 @@ router.post("/save", async (req, res) => {
   }
 });
 
+router.get("/history/:userId", async (req, res) => {
+    try {
+        const userId = req.params.userId;
+
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        res.json({
+            success: true,
+            history: user.gameHistory.slice(-20).reverse(), 
+            highestScore: user.personalBests.highestScore,
+            bestAverageReactionTime: user.personalBests.bestAverageReactionTime,
+            totalGames: user.gameHistory.length
+        });
+
+    } catch (err) {
+        console.error("History fetch error:", err);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+});
+
+
 module.exports = router;
