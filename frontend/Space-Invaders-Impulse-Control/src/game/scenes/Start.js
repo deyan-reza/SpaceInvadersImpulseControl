@@ -7,7 +7,6 @@ export class Start extends Phaser.Scene {
 
     preload() {
         this.load.setPath('assets');
-
         this.load.image('background', 'bg.jpg');
     }
 
@@ -25,7 +24,14 @@ export class Start extends Phaser.Scene {
 
         // --- BUTTONS ---
         this.makeButton(512, 350, 'START GAME', () => {
-            this.scene.start('Calibration');
+            const isCalibrated = localStorage.getItem("isCalibrated");
+
+            if (!isCalibrated) {
+                this.scene.start("Calibration");
+            } else {
+                const savedCalibration = JSON.parse(localStorage.getItem("calibrationData"));
+                this.scene.start("Game", savedCalibration);
+            }
         });
 
         this.makeButton(512, 430, 'HOW TO PLAY', () => {
@@ -54,8 +60,7 @@ export class Start extends Phaser.Scene {
         return btn;
     }
 
-showHowToPlay() {
-    this.scene.start("HowToPlay")
-
-}
+    showHowToPlay() {
+        this.scene.start("HowToPlay");
+    }
 }
