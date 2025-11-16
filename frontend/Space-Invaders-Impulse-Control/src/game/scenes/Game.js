@@ -245,7 +245,47 @@ export class Game extends Phaser.Scene {
             }
         });
     }
+    
+    handleWin() {
+        // Pause all physics + timers
+        this.physics.pause();
 
+        // Create black box
+        const box = this.add.rectangle(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            400,        // width
+            150,        // height
+            0x000000,   // black
+            0.8         // opacity
+        );
+        box.setOrigin(0.5);
+
+        // Add win text
+        const winText = this.add.text(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            "YOU WIN!",
+            {
+                fontFamily: "Arial",
+                fontSize: "72px",
+                color: "#00ff00",     // green
+                fontStyle: "bold"
+            }
+        );
+        winText.setOrigin(0.5);
+
+        // Delay before returning to Start Screen
+        this.input.keyboard.once('keydown-SPACE', () => {
+            this.scene.start('Start');
+        });
+
+                // Or click/tap
+        this.input.once('pointerdown', () => {
+            this.scene.start('Start');
+        });
+    }
+    
     update() {
 
         // If player sprite or its physics body is gone, skip everything
@@ -260,7 +300,11 @@ export class Game extends Phaser.Scene {
             return;
         }
 
-
+        if (this.enemies.countActive(true) === 0 && !this.winTriggered) {
+            this.winTriggered = true;
+            this.handleWin();
+        }
+        
         // ========= RETRO ENEMY BLOCK MOVEMENT ==========
         // Move once every enemyMoveInterval ms (blocky / retro)
         if (this.time.now - this.lastEnemyMove >= this.enemyMoveInterval) {
