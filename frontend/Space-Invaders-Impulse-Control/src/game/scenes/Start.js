@@ -39,7 +39,7 @@ export class Start extends Phaser.Scene {
 
     makeButton(x, y, label, callback) {
         const btn = this.add.text(x, y, label, {
-            fontFamily: 'Courier',
+            fontFamily: 'Retro',
             fontSize: '32px',
             color: '#00ff00',
             backgroundColor: '#000000',
