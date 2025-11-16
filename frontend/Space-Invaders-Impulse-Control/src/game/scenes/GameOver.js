@@ -6,10 +6,16 @@ export class GameOver extends Phaser.Scene {
         super('GameOver');
     }
 
+    preload() {
+        this.load.setPath('assets');
+        this.load.audio('gameOverSFX', 'GO.mp3');
+    }
+
     init(data) {
         this.finalScore = data.finalScore || 0;
         this.averageReactionTime = data.averageReactionTime || 0;
     }
+    
 
     create() {
         this.add.text(512, 250, "GAME OVER", {
@@ -50,5 +56,8 @@ export class GameOver extends Phaser.Scene {
             EventBus.emit("go-home");
             this.scene.start('Start');
         });
+    
+        this.gameOverSFX.play();
+
     }
 }

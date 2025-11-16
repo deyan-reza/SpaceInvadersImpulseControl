@@ -9,6 +9,8 @@ export class Start extends Phaser.Scene {
         this.load.setPath('assets');
 
         this.load.image('background', 'bg.jpg');
+        this.load.audio('bgMusic', 'bg.mp3');
+
     }
 
     create() {
@@ -23,8 +25,16 @@ export class Start extends Phaser.Scene {
             align: 'center'
         }).setOrigin(0.5);
 
+        this.bgMusic = this.sound.add('bgMusic', {
+            loop: true,
+            volume: 0.4  // adjust volume here
+        });
+
+        this.bgMusic.play();
+        
         // --- BUTTONS ---
         this.makeButton(512, 350, 'START GAME', () => {
+            this.bgMusic.stop();
             this.scene.start('Calibration');
         });
 
@@ -55,6 +65,7 @@ export class Start extends Phaser.Scene {
     }
 
 showHowToPlay() {
+    this.bgMusic.stop();
     this.scene.start("HowToPlay")
 
 }

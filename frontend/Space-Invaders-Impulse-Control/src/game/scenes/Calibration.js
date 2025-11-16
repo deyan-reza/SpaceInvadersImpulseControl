@@ -11,6 +11,7 @@ export class Calibration extends Phaser.Scene {
     }
 
     create() {
+
     this.add.image(512, 384, 'background');
 
     this.add.text(512, 150, 'Calibration Test', {

@@ -20,6 +20,10 @@ export class Game extends Phaser.Scene {
         this.load.image('yellow', 'yellow.png');
         this.load.image('green', 'green.png');
         this.load.image('heart', 'heart_png.png');
+        this.load.audio('shootSound', 'shoot.wav');
+        this.load.audio('deathSound', 'explosion.wav');
+        this.load.audio('killSound', 'invaderkilled.wav');
+        this.load.audio('bgMusic', 'bg.mp3');
     }
 
     create(calibration) {
@@ -31,8 +35,17 @@ export class Game extends Phaser.Scene {
         this.penaltyDuration = calibration?.penaltyTime || 500;
         this.baseEnemyMoveInterval = 1000;
         this.enemyMoveInterval = this.baseEnemyMoveInterval;
+        this.shootSFX = this.sound.add('shootSound');
+        this.deathSFX = this.sound.add('deathSound', {volume: 0.3});
+        this.enemyKilledSFX = this.sound.add('killSound');
 
-  
+        this.bgMusic = this.sound.add('bgMusic', {
+            loop: true,
+            volume: 0.4  // adjust volume here
+        });
+
+        this.bgMusic.play();
+
 
         // background
         this.add.image(512, 384, 'background');
@@ -142,10 +155,14 @@ export class Game extends Phaser.Scene {
         this.modifyScore(0);
 
         EventBus.emit('current-scene-ready', this);
+
+
     }
 
     gameOver() {
         console.log("GAME OVER!");
+
+        this.bgMusic.stop();
 
         // Stop movement
         this.playerLocked = true;
@@ -213,7 +230,7 @@ export class Game extends Phaser.Scene {
 
     handlePlayerHit(bullet, player) {
         bullet.destroy();
-
+        this.deathSFX.play();
         console.log("Player HIT!");
 
         this.lives--;
@@ -280,23 +297,18 @@ export class Game extends Phaser.Scene {
 
         this.updateEnemyColors(true);
 
-        this.flash = this.add.rectangle(512, 50, 800, 20, 0x00ff00);
-        this.flash.alpha = 0.6;
-
         this.time.delayedCall(this.windowDuration, () => {
             this.windowOpen = false;
             this.windowOpenedAt = null;
             this.updateEnemyColors(false);
-            if (this.flash) {
-                this.flash.destroy();
-                this.flash = null;
-            }
         });
     }
     
     handleWin() {
         // Pause all physics + timers
         this.physics.pause();
+        this.bgMusic.stop();
+
 
         // Create black box
         const box = this.add.rectangle(
@@ -444,6 +456,8 @@ export class Game extends Phaser.Scene {
 
 
     shootBullet() {
+        this.shootSFX.play();
+
         const offsets = this.doubleShotActive ? [-15, 15] : [0];
         offsets.forEach(offset => this.spawnPlayerBullet(offset));
     }
@@ -715,6 +729,8 @@ export class Game extends Phaser.Scene {
 
     handleEnemyHit(bullet, enemy) {
         bullet.destroy();
+
+        this.enemyKilledSFX.play();
 
         if (!enemy.alive) return;
 
