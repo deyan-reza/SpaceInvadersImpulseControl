@@ -3,6 +3,7 @@ import { Start } from './scenes/Start.js';
 import { Calibration } from './scenes/Calibration.js';
 import { HowToPlay } from './scenes/HowToPlay.js';
 import { AUTO, Game } from 'phaser';
+import { GameOver } from './scenes/GameOver.js';
 
 const config = {
     type: AUTO,
@@ -24,6 +25,7 @@ const config = {
         HowToPlay,
         Calibration,
         MainGame,
+        GameOver
     ]
 };
 

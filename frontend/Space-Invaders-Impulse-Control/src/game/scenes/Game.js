@@ -183,8 +183,12 @@ export class Game extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // Optionally restart
-        this.time.delayedCall(3000, () => {
-            this.scene.start('Calibration'); // or StartScreen
+        // this.time.delayedCall(3000, () => {
+        //     this.scene.start('Calibration'); // or StartScreen
+        // });
+        this.scene.start('GameOver', {
+            finalScore: this.finalScore,
+            averageReactionTime: this.averageReactionTime
         });
     }
 

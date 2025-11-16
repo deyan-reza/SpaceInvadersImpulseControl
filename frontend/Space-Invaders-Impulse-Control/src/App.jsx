@@ -2,6 +2,9 @@ import { useRef, useState } from 'react';
 import { PhaserGame } from './PhaserGame';
 import Login from './Login';
 import Signup from './Signup';
+import { EventBus } from './game/EventBus';  
+import { useEffect } from 'react';
+
 
 function App() {
     const phaserRef = useRef();
@@ -10,6 +13,19 @@ function App() {
         userId: localStorage.getItem("userId"),
         username: localStorage.getItem("username")
     });
+
+    useEffect(() => {
+        const handleHome = () => {
+            console.log("EventBus → go-home received.");
+            setCurrentPage("home");
+        };
+
+        EventBus.on('go-home', handleHome);
+
+        return () => {
+            EventBus.off('go-home', handleHome);
+        };
+    }, []);
 
     const logout = () => {
         localStorage.removeItem("userId");
