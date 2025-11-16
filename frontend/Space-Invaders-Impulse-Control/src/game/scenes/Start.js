@@ -33,7 +33,7 @@ export class Start extends Phaser.Scene {
         });
 
         this.makeButton(512, 510, 'PAST SESSIONS', () => {
-            console.log('Will load past sessions screen');
+            this.showPastSessions();
         });
     }
 
@@ -56,6 +56,9 @@ export class Start extends Phaser.Scene {
 
 showHowToPlay() {
     this.scene.start("HowToPlay")
+}
 
+showPastSessions() {
+    this.scene.start("PastSessions")
 }
 }

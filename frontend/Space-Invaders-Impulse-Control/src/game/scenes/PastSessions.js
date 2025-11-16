@@ -1,0 +1,108 @@
+import Phaser from 'phaser';
+import { EventBus } from '../EventBus';
+
+export class PastSessions extends Phaser.Scene {
+    constructor() {
+        super('PastSessions');
+    }
+
+    async create() {
+        // Title
+        this.add.text(512, 50, "Past Sessions", {
+            fontFamily: "Courier",
+            fontSize: "44px",
+            color: "#ffffff"
+        }).setOrigin(0.5);
+
+        // Return button (TOP-RIGHT)
+        const backBtn = this.add.text(950, 40, "Main Menu", {
+            fontFamily: "Courier",
+            fontSize: "28px",
+            color: "#00aaff",
+            backgroundColor: "#00000088",
+            padding: { x: 10, y: 6 }
+        })
+        .setOrigin(1, 0.5)
+        .setInteractive({ useHandCursor: true });
+
+        backBtn.on("pointerdown", () => {
+            EventBus.emit("go-home");
+            this.scene.start("Start");
+        });
+
+        const userId = localStorage.getItem("userId");
+
+        if (!userId) {
+            this.add.text(512, 200, "You must log in to view past sessions.", {
+                fontFamily: "Courier",
+                fontSize: "26px",
+                color: "#ff5555",
+                align: "center"
+            }).setOrigin(0.5);
+            return;
+        }
+
+        // Fetch history
+        let result;
+        try {
+            const res = await fetch(`http://localhost:8000/game/history/${userId}`);
+            result = await res.json();
+        } catch {
+            this.add.text(512, 200, "Error loading history.", {
+                fontFamily: "Courier",
+                fontSize: "26px",
+                color: "#ff5555"
+            }).setOrigin(0.5);
+            return;
+        }
+
+        const history = result.history || [];
+
+        // BEST STATS (smaller + aligned)
+        this.add.text(60, 120,
+            `Personal Best Score: ${result.highestScore ?? "N/A"}`,
+            { fontFamily: "Courier", fontSize: "22px", color: "#00ff00" }
+        );
+
+        this.add.text(60, 150,
+            `Best Avg Reaction Time: ${
+                result.bestAverageReactionTime !== Infinity
+                    ? Math.round(result.bestAverageReactionTime) + "ms"
+                    : "N/A"
+            }`,
+            { fontFamily: "Courier", fontSize: "22px", color: "#00ff00" }
+        );
+
+
+        this.add.text(60, 190, "Recent Sessions:", {
+            fontFamily: "Courier",
+            fontSize: "26px",
+            color: "#ffffff"
+        });
+
+        // LIST (smaller font, 20px line height)
+        const startY = 230;
+        const lineHeight = 22;
+
+        if (history.length === 0) {
+            this.add.text(60, startY, "No games played yet.", {
+                fontFamily: "Courier",
+                fontSize: "20px",
+                color: "#aaaaaa"
+            });
+        } else {
+            history.slice().reverse().slice(0, 25).forEach((game, i) => {
+                const date = new Date(game.timestamp);
+                const entry = `#${i + 1} | Score: ${game.finalScore} | K: ${game.killCount} | M: ${game.misfires} | RT: ${
+                    game.averageReactionTime ? Math.round(game.averageReactionTime) + "ms" : "N/A"
+                } | ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+
+                this.add.text(60, startY + i * lineHeight, entry, {
+                    fontFamily: "Courier",
+                    fontSize: "18px",
+                    color: "#ffffff"
+                });
+            });
+        }
+    }
+}
