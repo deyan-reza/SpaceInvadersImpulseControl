@@ -55,8 +55,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-
-
 // GET CURRENT USER
 router.get("/me", auth, async (req, res) => {
   try {
