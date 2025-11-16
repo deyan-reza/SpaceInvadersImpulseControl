@@ -44,15 +44,19 @@ router.post("/save", async (req, res) => {
       killCount
     );
 
-    user.personalBests.fewestMisfires = Math.min(
-      user.personalBests.fewestMisfires,
-      misfires
-    );
+    if (typeof misfires === "number") {
+      user.personalBests.fewestMisfires = Math.min(
+        user.personalBests.fewestMisfires,
+        misfires
+      );
+    }
 
-    user.personalBests.bestAverageReactionTime = Math.min(
-      user.personalBests.bestAverageReactionTime,
-      averageReactionTime
-    );
+    if (typeof averageReactionTime === "number") {
+      user.personalBests.bestAverageReactionTime = Math.min(
+        user.personalBests.bestAverageReactionTime,
+        averageReactionTime
+      );
+    }
 
     await user.save();
 

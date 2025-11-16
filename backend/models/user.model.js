@@ -5,7 +5,7 @@ const GameEntrySchema = new mongoose.Schema({
   killCount: { type: Number, required: true },
   misfires: { type: Number, required: true },
   finalScore: { type: Number, required: true },
-  averageReactionTime: { type: Number, required: true },
+  averageReactionTime: { type: Number, default: null },
   timestamp: { type: Date, default: Date.now }
 });
 

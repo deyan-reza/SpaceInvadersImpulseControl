@@ -724,7 +724,7 @@ export class Game extends Phaser.Scene {
                 killCount: this.killCount,
                 misfires: this.misfireCount,
                 finalScore: this.finalScore,
-                averageReactionTime: this.averageReactionTime
+                averageReactionTime: this.averageReactionTime ?? 0
             })
         })
             .then(res => res.json())
