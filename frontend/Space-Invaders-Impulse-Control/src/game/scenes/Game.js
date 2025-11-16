@@ -32,6 +32,8 @@ export class Game extends Phaser.Scene {
         this.baseEnemyMoveInterval = 1000;
         this.enemyMoveInterval = this.baseEnemyMoveInterval;
 
+  
+
         // background
         this.add.image(512, 384, 'background');
 
@@ -100,6 +102,31 @@ export class Game extends Phaser.Scene {
             color: '#ffffff'
         });
         this.scoreText.setScrollFactor(0);
+        // Performance tracking
+        this.reactionTimes = [];
+        this.windowOpenedAt = null;
+        this.killCount = 0;
+        this.misfireCount = 0;
+        this.finalScore = 0;
+        this.killText = this.add.text(20, 130, 'Kills: 0', {
+            fontFamily: 'Courier',
+            fontSize: '20px',
+            color: '#ffffff'
+        });
+        this.killText.setScrollFactor(0);
+        this.misfireText = this.add.text(20, 160, 'Misfires: 0', {
+            fontFamily: 'Courier',
+            fontSize: '20px',
+            color: '#ffffff'
+        });
+        this.misfireText.setScrollFactor(0);
+        // this.finalScoreText = this.add.text(20, 190, 'Final Score: 0', {
+        //     fontFamily: 'Courier',
+        //     fontSize: '20px',
+        //     color: '#ffffff'
+        // });
+        // this.finalScoreText.setScrollFactor(0);
+        this.updatePerformanceStats();
         this.activeScoreState = null;
         this.doubleShotActive = false;
         this.extraRowEnemies = [];
@@ -134,6 +161,19 @@ export class Game extends Phaser.Scene {
 
         // Stop enemy movement & shooting
         this.enemyShootTimer.remove(false);
+
+
+        if (this.reactionTimes && this.reactionTimes.length > 0) {
+            this.averageReactionTime =
+                this.reactionTimes.reduce((a, b) => a + b, 0) /
+                this.reactionTimes.length;
+        } else {
+            this.averageReactionTime = null;
+        }
+
+        console.log("Average Reaction Time:", this.averageReactionTime);
+
+        this.sendResultsToServer();
 
         // Display "Game Over"
         this.add.text(512, 350, 'GAME OVER', {
@@ -230,7 +270,10 @@ export class Game extends Phaser.Scene {
     }
 
     openWindow() {
+        
         this.windowOpen = true;
+        this.windowOpenedAt = performance.now();
+
         this.updateEnemyColors(true);
 
         this.flash = this.add.rectangle(512, 50, 800, 20, 0x00ff00);
@@ -238,6 +281,7 @@ export class Game extends Phaser.Scene {
 
         this.time.delayedCall(this.windowDuration, () => {
             this.windowOpen = false;
+            this.windowOpenedAt = null;
             this.updateEnemyColors(false);
             if (this.flash) {
                 this.flash.destroy();
@@ -327,6 +371,12 @@ export class Game extends Phaser.Scene {
             // GOOD SHOT (within timing window)
             if (this.windowOpen) {
                 console.log("GOOD SHOT");
+
+                if (this.windowOpenedAt !== null) {
+                    const rt = performance.now() - this.windowOpenedAt;
+                    this.reactionTimes.push(rt);
+                    console.log("Reaction Time:", rt);
+                }
                 this.cleanStreak++;
                 this.checkStreakReward();
                 this.shootBullet();
@@ -337,6 +387,7 @@ export class Game extends Phaser.Scene {
                 console.log("IMPULSIVE / TOO EARLY");
                 this.cleanStreak = 0;
                 this.modifyScore(-1);
+                this.recordMisfire();
                 this.applyPenalty();
             }
         }
@@ -625,6 +676,7 @@ export class Game extends Phaser.Scene {
         // TODO: Add reward or adaptive difficulty here
         console.log("Enemy destroyed!");
         this.modifyScore(1);
+        this.recordKill();
 
         // optional: check if all enemies are dead
         if (this.enemies.countActive() === 0) {
@@ -632,6 +684,52 @@ export class Game extends Phaser.Scene {
             // you can create a new wave here
         }
     }
+    recordKill() {
+        this.killCount += 1;
+        this.updatePerformanceStats();
+    }
 
+    recordMisfire() {
+        this.misfireCount += 1;
+        this.updatePerformanceStats();
+    }
+
+    updatePerformanceStats() {
+        this.finalScore = this.killCount - this.misfireCount;
+
+        if (this.killText) {
+            this.killText.setText(`Kills: ${this.killCount}`);
+        }
+
+        if (this.misfireText) {
+            this.misfireText.setText(`Misfires: ${this.misfireCount}`);
+        }
+
+    }
+    sendResultsToServer() {
+        const userId = localStorage.getItem("userId");
+
+        if (!userId) {
+            console.warn("No userId found — cannot save game");
+            return;
+        }
+
+        fetch("http://localhost:8000/game/save", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                userId: userId,
+                killCount: this.killCount,
+                misfires: this.misfireCount,
+                finalScore: this.finalScore,
+                averageReactionTime: this.averageReactionTime
+            })
+        })
+            .then(res => res.json())
+            .then(data => console.log("Game results saved:", data))
+            .catch(err => console.error("Save error:", err));
+    }
 
 }
